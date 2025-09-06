@@ -20,6 +20,7 @@ import time
 from typing import Dict, Any, List
 from collections import defaultdict
 import pandas as pd
+from data_visualization import VisualizationManager
 
 # --- Advanced Theme System ---
 class ThemeManager:
@@ -267,55 +268,47 @@ class App(ctk.CTk):
         """Change application theme"""
         self.theme_manager.apply_theme(theme_name)
         messagebox.showinfo("Theme Changed", f"Theme changed to {theme_name.title()}!\nRestart the app to see full effects.")
+        # Update visualization theme if analytics manager exists
+        if hasattr(self, 'analytics_manager') and self.analytics_manager:
+            try:
+                self.analytics_manager.visualizer.theme_manager = self.theme_manager
+                self.analytics_manager.visualizer.setup_matplotlib_theme()
+                self.analytics_manager.update_chart()
+            except Exception:
+                pass
     
     def setup_analytics_tab(self):
-        """Setup analytics tab with data visualization"""
+        """Setup analytics tab with integrated visualization manager"""
         self.tab_analytics.grid_columnconfigure(0, weight=1)
         self.tab_analytics.grid_rowconfigure(1, weight=1)
-        
+
         # Header
         header = ctk.CTkFrame(self.tab_analytics)
         header.grid(row=0, column=0, sticky="ew", padx=10, pady=10)
         header.grid_columnconfigure(1, weight=1)
-        
-        ctk.CTkLabel(header, text="📊 Database Analytics & Insights", 
-                    font=ctk.CTkFont(size=18, weight="bold")).grid(row=0, column=0, padx=15, pady=15, sticky="w")
-        
-        # Refresh button
-        ctk.CTkButton(header, text="🔄 Refresh Data", 
-                     command=self.refresh_analytics,
-                     width=120).grid(row=0, column=1, padx=15, pady=15, sticky="e")
-        
-        # Analytics content
-        content_frame = ctk.CTkFrame(self.tab_analytics)
-        content_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0,10))
-        content_frame.grid_columnconfigure((0,1), weight=1)
-        content_frame.grid_rowconfigure((0,1), weight=1)
-        
-        # Database overview cards
-        overview_frame = ctk.CTkFrame(content_frame)
-        overview_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
-        overview_frame.grid_columnconfigure((0,1), weight=1)
-        overview_frame.grid_rowconfigure((0,1), weight=1)
-        
-        ctk.CTkLabel(overview_frame, text="📈 Database Overview", 
-                    font=ctk.CTkFont(size=14, weight="bold")).grid(row=0, column=0, columnspan=2, pady=10)
-        
-        # Performance frame
-        perf_frame = ctk.CTkFrame(content_frame)
-        perf_frame.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
-        
-        ctk.CTkLabel(perf_frame, text="⚡ Query Performance Insights", 
-                    font=ctk.CTkFont(size=14, weight="bold")).pack(pady=10)
-        
-        perf_content = ctk.CTkTextbox(perf_frame, height=150)
-        perf_content.pack(fill="both", expand=True, padx=10, pady=(0,10))
-        perf_content.insert("1.0", "⚡ Performance metrics will be displayed here:\n\n"
-                                   "• Average query execution time\n"
-                                   "• Most frequently accessed collections\n"
-                                   "• Index efficiency recommendations\n"
-                                   "• Connection pool statistics")
-        perf_content.configure(state="disabled")
+
+        ctk.CTkLabel(header, text="📊 Database Analytics & Insights",
+                     font=ctk.CTkFont(size=18, weight="bold")).grid(row=0, column=0, padx=15, pady=15, sticky="w")
+
+        ctk.CTkButton(header, text="🔄 Refresh",
+                      command=self.refresh_analytics,
+                      width=120).grid(row=0, column=1, padx=15, pady=15, sticky="e")
+
+        # Analytics content area
+        self.analytics_container = ctk.CTkFrame(self.tab_analytics)
+        self.analytics_container.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0,10))
+        self.analytics_container.grid_columnconfigure(0, weight=1)
+        self.analytics_container.grid_rowconfigure(0, weight=1)
+
+        # Initialize Visualization Manager
+        try:
+            self.analytics_manager = VisualizationManager(self.analytics_container, self.client, self.theme_manager)
+        except Exception as e:
+            # Fallback message
+            err_box = ctk.CTkTextbox(self.analytics_container, height=120)
+            err_box.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+            err_box.insert("1.0", f"Failed to initialize analytics UI: {e}")
+            err_box.configure(state="disabled")
     
     def setup_performance_tab(self):
         """Setup performance monitoring tab"""
@@ -448,24 +441,20 @@ class App(ctk.CTk):
         self.after(3000, self.update_performance_display)
     
     def refresh_analytics(self):
-        """Refresh analytics data"""
+        """Refresh analytics data and UI"""
         if not self.client:
             messagebox.showwarning("No Connection", "Please connect to a database first.")
             return
-        
         try:
-            # Get database stats
-            db_names = self.client.list_database_names()
-            total_collections = 0
-            
-            for db_name in db_names:
-                if db_name not in ["admin", "config", "local"]:
-                    collections = self.client[db_name].list_collection_names()
-                    total_collections += len(collections)
-            
-            messagebox.showinfo("Analytics Updated", 
-                              f"Found {len(db_names)} databases with {total_collections} collections total.")
-        
+            if hasattr(self, 'analytics_manager') and self.analytics_manager:
+                # Ensure client is propagated and refresh UI lists
+                self.analytics_manager.client = self.client
+                self.analytics_manager.visualizer.client = self.client
+                self.analytics_manager.refresh_databases()
+                self.analytics_manager.update_chart()
+            else:
+                # Initialize if missing
+                self.analytics_manager = VisualizationManager(self.analytics_container, self.client, self.theme_manager)
         except Exception as e:
             messagebox.showerror("Analytics Error", f"Failed to refresh analytics: {e}")
 
@@ -1093,6 +1082,11 @@ class App(ctk.CTk):
         self.status_indicator.configure(text="🟢 Connected", text_color="green")
         messagebox.showinfo("Success", "Connected to MongoDB successfully!")
         self.populate_db_tree()
+        # Initialize/refresh Analytics visualization after connection
+        try:
+            self.refresh_analytics()
+        except Exception:
+            pass
 
     def on_connect_fail(self, error):
         self.connect_button.configure(state="normal", text="🔌 Connect")

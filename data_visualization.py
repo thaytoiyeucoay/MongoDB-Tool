@@ -426,7 +426,7 @@ class VisualizationManager:
         self.chart_type_var = ctk.StringVar(value="Collection Overview")
         self.chart_type_menu = ctk.CTkOptionMenu(
             self.control_frame,
-            values=["Collection Overview", "Field Distribution", "Time Series", "Query Performance"],
+            values=["Auto", "Collection Overview", "Field Distribution", "Time Series", "Query Performance"],
             variable=self.chart_type_var,
             command=self.on_chart_type_change
         )
@@ -505,7 +505,12 @@ class VisualizationManager:
                 return
             
             # Create appropriate chart
-            if chart_type == "Collection Overview":
+            if chart_type == "Auto":
+                if collection_name and collection_name != "No collections":
+                    self.current_canvas = self.visualizer.create_auto_chart(db_name, collection_name, self.chart_frame)
+                else:
+                    self.current_canvas = self.visualizer.create_collection_size_chart(db_name, self.chart_frame)
+            elif chart_type == "Collection Overview":
                 self.current_canvas = self.visualizer.create_collection_size_chart(db_name, self.chart_frame)
             elif chart_type == "Field Distribution" and collection_name and collection_name != "No collections":
                 self.current_canvas = self.visualizer.create_field_distribution_chart(
@@ -523,3 +528,119 @@ class VisualizationManager:
             error_label = ctk.CTkLabel(self.chart_frame, text=f"Error: {str(e)}", 
                                      text_color="red")
             error_label.pack(pady=20)
+
+    def create_auto_chart(self, db_name: str, collection_name: str, parent_frame, sample_size: int = 1000):
+        """Analyze fields and auto-pick a suitable chart (time series, categorical bar, or numeric histogram)."""
+        try:
+            collection = self.client[db_name][collection_name]
+            docs = list(collection.aggregate([{"$sample": {"size": sample_size}}]))
+            if not docs:
+                return self._create_no_data_chart(parent_frame, "No documents to analyze")
+
+            # Analyze fields
+            field_info = self._infer_field_info(docs)
+            # Priority: datetime -> categorical -> numeric -> fallback
+            if field_info.get('datetime_field'):
+                return self.create_time_series_chart(db_name, collection_name, parent_frame, date_field=field_info['datetime_field'])
+            elif field_info.get('categorical_field'):
+                return self._plot_categorical_bar(docs, field_info['categorical_field'], parent_frame)
+            elif field_info.get('numeric_field'):
+                return self._plot_numeric_hist(docs, field_info['numeric_field'], parent_frame)
+            else:
+                return self.create_field_distribution_chart(db_name, collection_name, parent_frame)
+        except Exception as e:
+            return self._create_error_chart(parent_frame, f"Auto chart error: {str(e)}")
+
+    def _infer_field_info(self, documents: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Infer candidate fields of interest by scanning sample documents."""
+        type_counts = defaultdict(lambda: Counter())
+        unique_values = defaultdict(set)
+        datetime_candidates = Counter()
+        for doc in documents:
+            for k, v in doc.items():
+                t = type(v).__name__
+                type_counts[k][t] += 1
+                if isinstance(v, (int, float)):
+                    unique_values[k].add('num')  # marker to avoid huge memory
+                elif isinstance(v, str):
+                    if len(unique_values[k]) < 200:  # limit memory for strings
+                        unique_values[k].add(v)
+                    # naive ISO date detection
+                    if len(v) >= 10 and v[4] == '-' and v[7] == '-':
+                        datetime_candidates[k] += 1
+                elif isinstance(v, datetime):
+                    datetime_candidates[k] += 1
+
+        # Choose datetime field
+        datetime_field = None
+        if datetime_candidates:
+            datetime_field, _ = datetime_candidates.most_common(1)[0]
+
+        # Choose categorical field (string with small cardinality)
+        categorical_field = None
+        for field, counts in type_counts.items():
+            if counts.get('str', 0) > 0 and len(unique_values[field]) > 0 and len(unique_values[field]) <= 20:
+                categorical_field = field
+                break
+
+        # Choose numeric field
+        numeric_field = None
+        for field, counts in type_counts.items():
+            if counts.get('int', 0) + counts.get('float', 0) > 0:
+                numeric_field = field
+                break
+
+        return {
+            'datetime_field': datetime_field,
+            'categorical_field': categorical_field,
+            'numeric_field': numeric_field
+        }
+
+    def _plot_categorical_bar(self, documents: List[Dict[str, Any]], field: str, parent_frame):
+        """Plot a bar chart of top categories for the given string field."""
+        try:
+            counter = Counter()
+            for doc in documents:
+                val = doc.get(field)
+                if isinstance(val, str):
+                    counter[val] += 1
+            if not counter:
+                return self._create_no_data_chart(parent_frame, f"No categorical data for '{field}'")
+            top = counter.most_common(15)
+            labels, values = zip(*top)
+            fig, ax = plt.subplots(figsize=(10, 6))
+            fig.patch.set_facecolor(self.bg_color)
+            bars = ax.bar(labels, values, color=sns.color_palette("husl", len(labels)))
+            ax.set_title(f"Top Values for '{field}'", color=self.text_color, fontweight='bold')
+            ax.set_ylabel('Count', color=self.text_color)
+            ax.tick_params(colors=self.text_color)
+            plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+            for bar, v in zip(bars, values):
+                ax.text(bar.get_x()+bar.get_width()/2., bar.get_height()*1.01, str(v), ha='center', va='bottom', color=self.text_color)
+            plt.tight_layout()
+            return self._embed_chart(fig, parent_frame)
+        except Exception as e:
+            return self._create_error_chart(parent_frame, f"Categorical chart error: {str(e)}")
+
+    def _plot_numeric_hist(self, documents: List[Dict[str, Any]], field: str, parent_frame):
+        """Plot a histogram for a numeric field."""
+        try:
+            values = []
+            for doc in documents:
+                v = doc.get(field)
+                if isinstance(v, (int, float)):
+                    values.append(float(v))
+            if not values:
+                return self._create_no_data_chart(parent_frame, f"No numeric data for '{field}'")
+            fig, ax = plt.subplots(figsize=(10, 6))
+            fig.patch.set_facecolor(self.bg_color)
+            ax.hist(values, bins=20, alpha=0.8, color='skyblue', edgecolor='black')
+            ax.set_title(f"Distribution of '{field}'", color=self.text_color, fontweight='bold')
+            ax.set_xlabel(field, color=self.text_color)
+            ax.set_ylabel('Frequency', color=self.text_color)
+            ax.tick_params(colors=self.text_color)
+            ax.grid(True, alpha=0.3)
+            plt.tight_layout()
+            return self._embed_chart(fig, parent_frame)
+        except Exception as e:
+            return self._create_error_chart(parent_frame, f"Numeric chart error: {str(e)}")
