@@ -4,7 +4,7 @@ import csv
 import pandas as pd
 from pathlib import Path
 import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Callable, Optional
 from bson import ObjectId
 import xlsxwriter
 from reportlab.lib.pagesizes import letter, A4
@@ -20,7 +20,7 @@ class AdvancedExporter:
         self.collection_name = collection_name
         self.collection = client[db_name][collection_name]
     
-    def export_to_excel(self, file_path: str, query: Dict = None, limit: int = None):
+    def export_to_excel(self, file_path: str, query: Dict = None, limit: int = None, mask: Optional[Callable[[List[Dict[str, Any]]], List[Dict[str, Any]]]] = None):
         """Export collection data to Excel format"""
         try:
             # Get data
@@ -29,6 +29,8 @@ class AdvancedExporter:
                 cursor = cursor.limit(limit)
             
             documents = list(cursor)
+            if mask:
+                documents = mask(documents)
             if not documents:
                 raise ValueError("No documents found to export")
             
@@ -87,7 +89,7 @@ class AdvancedExporter:
         except Exception as e:
             raise Exception(f"Excel export failed: {str(e)}")
     
-    def export_to_csv(self, file_path: str, query: Dict = None, limit: int = None):
+    def export_to_csv(self, file_path: str, query: Dict = None, limit: int = None, fields: Optional[List[str]] = None, mask: Optional[Callable[[List[Dict[str, Any]]], List[Dict[str, Any]]]] = None):
         """Export collection data to CSV format"""
         try:
             cursor = self.collection.find(query or {})
@@ -112,19 +114,31 @@ class AdvancedExporter:
             all_keys = set()
             for doc in flattened_docs:
                 all_keys.update(doc.keys())
+
+            # Determine header fields
+            if fields:
+                # keep only requested fields, maintain given order
+                header_fields = [f for f in fields if f in all_keys]
+                if not header_fields:
+                    header_fields = sorted(all_keys)
+            else:
+                header_fields = sorted(all_keys)
             
             # Write to CSV
             with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
-                writer = csv.DictWriter(csvfile, fieldnames=sorted(all_keys))
+                writer = csv.DictWriter(csvfile, fieldnames=header_fields)
                 writer.writeheader()
-                writer.writerows(flattened_docs)
+                for row in flattened_docs:
+                    # ensure missing keys present as empty
+                    out = {k: row.get(k, "") for k in header_fields}
+                    writer.writerow(out)
             
             return f"Successfully exported {len(documents)} documents to CSV"
             
         except Exception as e:
             raise Exception(f"CSV export failed: {str(e)}")
     
-    def export_to_pdf_report(self, file_path: str, query: Dict = None, limit: int = 100):
+    def export_to_pdf_report(self, file_path: str, query: Dict = None, limit: int = 100, mask: Optional[Callable[[List[Dict[str, Any]]], List[Dict[str, Any]]]] = None):
         """Export collection data as a formatted PDF report"""
         try:
             cursor = self.collection.find(query or {})
@@ -228,7 +242,7 @@ class AdvancedExporter:
         except Exception as e:
             raise Exception(f"PDF export failed: {str(e)}")
     
-    def export_to_json(self, file_path: str, query: Dict = None, limit: int = None, pretty: bool = True):
+    def export_to_json(self, file_path: str, query: Dict = None, limit: int = None, pretty: bool = True, mask: Optional[Callable[[List[Dict[str, Any]]], List[Dict[str, Any]]]] = None):
         """Export collection data to JSON format"""
         try:
             cursor = self.collection.find(query or {})

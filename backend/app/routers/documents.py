@@ -6,6 +6,7 @@ from pymongo import ASCENDING, DESCENDING
 from ..services.mongo import conn_mgr
 from ..schemas import QueryRequest, QueryResponse, InsertRequest, UpdateRequest
 from ..utils import to_jsonable
+from .masking import get_active_profile, apply_masking
 
 router = APIRouter(tags=["documents"])
 
@@ -42,14 +43,46 @@ def query_documents(payload: QueryRequest, connection_id: str = Query(..., alias
         page = max(1, payload.page)
         page_size = max(1, payload.page_size)
         skip = (page - 1) * page_size
+        import time
+        t0 = time.perf_counter()
         items = list(cursor.skip(skip).limit(page_size))
+        exec_ms = int((time.perf_counter() - t0) * 1000)
 
+        # Simple index suggestion: use filter fields (1) + sort fields
+        suggestion = None
+        try:
+            filter_keys = list(query.keys()) if isinstance(query, dict) else []
+            sort_keys = []
+            if payload.sort:
+                for item in payload.sort:
+                    if isinstance(item, list) and len(item) == 2:
+                        sort_keys.append((item[0], 1 if int(item[1]) >= 0 else -1))
+            if filter_keys or sort_keys:
+                idx_keys: list[tuple[str, int]] = []
+                for k in filter_keys:
+                    if k != "_id":
+                        idx_keys.append((k, 1))
+                idx_keys.extend(sort_keys)
+                if idx_keys:
+                    suggestion = {
+                        "keys": idx_keys,
+                        "note": "Heuristic: filter fields first, then sort fields"
+                    }
+        except Exception:
+            pass
+
+        # Apply masking if active
+        profile = get_active_profile()
+        if profile and profile.get("active"):
+            items = [apply_masking(doc, profile) for doc in items]
         items_json = [to_jsonable(doc) for doc in items]
         return {
             "total": total,
             "page": page,
             "pageSize": page_size,
             "items": items_json,
+            "executionMs": exec_ms,
+            "indexSuggestion": suggestion,
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -123,3 +156,20 @@ def _from_jsonable(doc: Dict[str, Any]) -> Dict[str, Any]:
         except Exception:
             pass
     return d
+
+
+@router.post("/documents/delete-many")
+def delete_many(payload: QueryRequest, connection_id: str = Query(..., alias="connectionId")):
+    """Delete many documents matching the provided filter in a db/collection.
+    Reuses QueryRequest to receive db, collection, and filter fields.
+    """
+    client = conn_mgr.get(connection_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    try:
+        col = client[payload.db][payload.collection]
+        query = payload.filter or {}
+        res = col.delete_many(query)
+        return {"deleted": res.deleted_count}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

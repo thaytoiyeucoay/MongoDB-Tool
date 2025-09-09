@@ -6,6 +6,7 @@ import os
 import datetime
 
 from ..services.mongo import conn_mgr
+from .masking import get_active_profile, apply_masking
 from advanced_export import AdvancedExporter
 
 router = APIRouter(tags=["export"])
@@ -19,6 +20,7 @@ def export_collection(
     format: str = Query(..., description="excel|csv|json|pdf"),
     limit: Optional[int] = Query(None),
     pretty: Optional[bool] = Query(True),
+    fields: Optional[str] = Query(None, description="CSV only: comma-separated field names"),
     query: Optional[Dict[str, Any]] = None,
 ):
     """
@@ -50,17 +52,26 @@ def export_collection(
     out_path = os.path.join(tmp_dir, safe_name)
 
     try:
+        # Prepare masking hook if profile active
+        profile = get_active_profile()
+        def mask_hook(docs):
+            if not profile:
+                return docs
+            return [apply_masking(d, profile) for d in docs]
         if f == "excel":
-            exporter.export_to_excel(out_path, query or {}, limit)
+            exporter.export_to_excel(out_path, query or {}, limit, mask=mask_hook if profile else None)
             media = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         elif f == "csv":
-            exporter.export_to_csv(out_path, query or {}, limit)
+            fields_list = None
+            if fields:
+                fields_list = [s.strip() for s in fields.split(',') if s.strip()]
+            exporter.export_to_csv(out_path, query or {}, limit, fields=fields_list, mask=mask_hook if profile else None)
             media = "text/csv"
         elif f == "json":
-            exporter.export_to_json(out_path, query or {}, limit, pretty=pretty)
+            exporter.export_to_json(out_path, query or {}, limit, pretty=pretty, mask=mask_hook if profile else None)
             media = "application/json"
         elif f == "pdf":
-            exporter.export_to_pdf_report(out_path, query or {}, limit or 100)
+            exporter.export_to_pdf_report(out_path, query or {}, limit or 100, mask=mask_hook if profile else None)
             media = "application/pdf"
         else:
             raise HTTPException(status_code=400, detail="Unsupported format")

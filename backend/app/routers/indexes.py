@@ -32,7 +32,12 @@ def create_index(payload: IndexCreateRequest, connection_id: str = Query(..., al
     try:
         col = client[payload.db][payload.collection]
         keys = [(field, ASCENDING if int(direction) >= 0 else DESCENDING) for field, direction in payload.keys]
-        name = col.create_index(keys, name=payload.name, unique=payload.unique)
+        kwargs: Dict[str, Any] = {"name": payload.name, "unique": payload.unique}
+        if payload.partialFilterExpression:
+            kwargs["partialFilterExpression"] = payload.partialFilterExpression
+        if payload.collation:
+            kwargs["collation"] = payload.collation
+        name = col.create_index(keys, **kwargs)
         return {"name": name}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

@@ -42,6 +42,40 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* Dark-mode background vignette tweaks */
+.dark body {
+  background-image:
+    radial-gradient(600px circle at 85% -10%, color-mix(in oklab, oklch(0.62 0.19 278) 30%, transparent) 0%, transparent 42%),
+    radial-gradient(800px circle at -10% 110%, color-mix(in oklab, oklch(0.64 0.21 328) 24%, transparent) 0%, transparent 40%);
+}
+
+/* Custom animations */
+@keyframes background-pan {
+  from { background-position: 0% center; }
+  to { background-position: -200% center; }
+}
+
+@keyframes float-slow {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+  100% { transform: translateY(0px); }
+}
+
+@layer utilities {
+  .pan-gradient {
+    background-size: 200% 100%;
+    animation: background-pan 6s linear infinite;
+  }
+  .float-slow { animation: float-slow 6s ease-in-out infinite; }
+  .hover-glow {
+    @apply transition-all duration-300;
+  }
+  .hover-glow:hover {
+    box-shadow: 0 10px 30px 0 rgba(99, 102, 241, 0.18), 0 6px 12px -2px rgba(168, 85, 247, 0.18);
+    transform: translateY(-2px);
+  }
+}
+
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);
@@ -117,5 +151,56 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Soft vignette background */
+    background-image:
+      radial-gradient(600px circle at 85% -10%, color-mix(in oklab, oklch(0.77 0.19 276) 12%, transparent) 0%, transparent 40%),
+      radial-gradient(800px circle at -10% 110%, color-mix(in oklab, oklch(0.79 0.21 330) 10%, transparent) 0%, transparent 38%);
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  /* Glassmorphism utilities */
+  .glass {
+    @apply bg-white/15 backdrop-blur-xl ring-1 ring-white/20 shadow-xl;
+  }
+  .soft-card {
+    @apply bg-white/10 backdrop-blur-md ring-1 ring-white/15 rounded-3xl shadow-lg;
+  }
+  .pill {
+    @apply rounded-full px-3 py-1 text-sm bg-white/20 ring-1 ring-white/30;
+  }
+  .muted-input {
+    @apply h-11 rounded-2xl bg-white/10 ring-1 ring-white/20 text-foreground placeholder:text-foreground/40 focus:ring-2 focus:ring-primary/40 focus:outline-none;
+  }
+  .brand-gradient {
+    @apply bg-gradient-to-r from-indigo-500 to-fuchsia-500 text-white shadow-lg hover:from-indigo-600 hover:to-fuchsia-600;
+  }
+  /* Animated header gradient bar */
+  .header-gradient {
+    background-size: 200% 100%;
+  }
+  header:hover .header-gradient {
+    animation: background-pan 5s linear infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    header:hover .header-gradient { animation: none; }
+  }
+  .pill-tab {
+    @apply relative rounded-xl px-5 py-2 text-sm transition-colors data-[state=active]:text-white data-[state=active]:shadow-md;
+    background: color-mix(in oklab, var(--foreground) 10%, transparent);
+  }
+  .pill-tab[data-state="active"] {
+    background-image: linear-gradient(90deg, oklch(0.62 0.19 278) 0%, oklch(0.64 0.21 328) 100%);
+  }
+  .badge-ok {
+    /* inline .pill utilities */
+    @apply rounded-full px-3 py-1 text-sm bg-white/20 ring-1 ring-white/30;
+    @apply bg-emerald-500/15 text-emerald-200 ring-emerald-400/20;
+  }
+  .badge-warn {
+    /* inline .pill utilities */
+    @apply rounded-full px-3 py-1 text-sm bg-white/20 ring-1 ring-white/30;
+    @apply bg-rose-500/15 text-rose-200 ring-rose-400/20;
   }
 }

@@ -93,6 +93,52 @@ python app.py
   - Read the bilingual guide
   - Use contact information for support
 
+## Guide (VN/EN)
+
+Below is a condensed version of the in‑app Guide tab (see also the tabs rendered by `App.setup_enhanced_ui()` in `app.py`). The app includes: Management, Sync, Analytics, Performance, Guide, and Contact.
+
+### Management
+- Kết nối đến MongoDB qua URI (ví dụ: `mongodb://localhost:27017`). Nếu cần mật khẩu, tick “URI có mật khẩu” và điền `authSource` (thường là `admin`).
+- Chọn Database, Collection ở thanh bên trái để duyệt tài liệu.
+- Filter đơn giản (Field + Value) hoặc Filter nâng cao (JSON) với phân trang, sắp xếp, projection.
+- Tạo/Sửa/Xoá tài liệu với JSON editor. Quản lý Index (list/create/drop) ở panel bên phải.
+- Saved Queries: lưu, pin nhanh (tối đa 3 pin gần nhất), tải lại truy vấn một chạm.
+
+### Sync
+- Online: nhập Source/Destination (URI + DB), nhấn Start. Thanh tiến độ hiển thị %, có Cancel/Retry. Log chi tiết trong hộp thoại.
+- Offline: Export ZIP từ DB nguồn (stream tải và hiển thị %). Import ZIP lên DB đích (hiển thị % upload). Yêu cầu `mongodump`/`mongorestore` có trong PATH.
+
+### Export (nâng cao)
+- Xuất Excel/CSV/JSON/PDF. Với CSV, chọn trường bằng chip (kéo-thả sắp xếp), có gợi ý MRU và nút “Select all fields” (tự động lấy từ tài liệu mẫu).
+
+### Analytics
+- Chọn Database/Collection và Chart Type. Ở chế độ Auto, ứng dụng phân tích mẫu dữ liệu để đề xuất biểu đồ phù hợp (time series / bar / histogram).
+- Bảng thống kê có mini‑bars theo tỉ lệ và cảnh báo màu khi gần ngưỡng cao.
+
+### Performance
+- Mô phỏng CPU/Memory và placeholder thông số DB để tham khảo bố cục theo dõi.
+
+### Phím tắt (gợi ý)
+- Enter trong ô Filter nâng cao: chạy truy vấn.
+- CSV Field chips: Enter hoặc dấu phẩy để thêm chip; kéo thả để đổi thứ tự.
+
+### Ghi log & lỗi thường gặp
+- Log: `logs/app.log` (khi chạy bản desktop) hoặc log từ server/API nếu dùng frontend web.
+- Thiếu công cụ Sync: kiểm tra `mongodump`, `mongorestore`, `mongoimport`, `mongoexport` trong PATH.
+
+## Contact
+
+The app has a dedicated Contact tab (created in `app.py`, see the `setup_enhanced_ui()` method and subsequent tab setup). If you need help:
+
+- Create a GitHub issue with steps to reproduce, screenshots, and relevant logs.
+- Attach `logs/app.log` if the issue relates to the desktop app.
+- Include MongoDB version and OS information.
+
+If you prefer email support, add your team email here (example placeholder):
+- Email: your-team@example.com
+
+For feature requests, please describe the use case and desired outcome. Contributions are welcome via pull requests.
+
 ## Packaging (Optional)
 
 This repository includes a `build/` and `dist/` folder from previous packaging. To run the latest code, prefer running `python app.py` during development.

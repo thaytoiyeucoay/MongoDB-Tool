@@ -45,3 +45,5 @@ class IndexCreateRequest(BaseModel):
     keys: List[List[Any]]  # [["field", 1], ["other", -1]]
     unique: bool = False
     name: Optional[str] = None
+    partialFilterExpression: Optional[Dict[str, Any]] = None
+    collation: Optional[Dict[str, Any]] = None
