@@ -1696,32 +1696,32 @@ export default function ManagementPage() {
         <TabsContent value="saved">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {/* Profiles */}
-          <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-5 space-y-4">
+          <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-4 shadow-sm">
             <h2 className="text-lg font-semibold">Profiles</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-              <input className="md:col-span-1 rounded-xl border border-white/10 bg-white/10 px-3 py-2" placeholder="Name" value={newProfile.name} onChange={(e) => setNewProfile({ ...newProfile, name: e.target.value })} />
-              <input className="md:col-span-2 rounded-xl border border-white/10 bg-white/10 px-3 py-2" placeholder="mongodb://..." value={newProfile.uri} onChange={(e) => setNewProfile({ ...newProfile, uri: e.target.value })} />
+              <input className="md:col-span-1 rounded-xl border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" placeholder="Name" value={newProfile.name} onChange={(e) => setNewProfile({ ...newProfile, name: e.target.value })} />
+              <input className="md:col-span-2 rounded-xl border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" placeholder="mongodb://..." value={newProfile.uri} onChange={(e) => setNewProfile({ ...newProfile, uri: e.target.value })} />
             </div>
             <div className="flex justify-end">
-              <button className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 hover:bg-white/10" onClick={addProfile}>Save Profile</button>
+              <button className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50" onClick={addProfile}>Save Profile</button>
             </div>
-            <div className="overflow-auto rounded-xl border border-white/10">
-              <table className="min-w-full text-sm">
+            <div className="overflow-auto rounded-xl border border-gray-200">
+              <table className="min-w-full text-sm text-gray-800">
                 <thead>
-                  <tr className="bg-white/5 text-left text-slate-300">
-                    <th className="p-3 font-medium">Name</th>
-                    <th className="p-3 font-medium">URI</th>
-                    <th className="p-3 font-medium">Actions</th>
+                  <tr className="bg-gray-100 text-left">
+                    <th className="p-3 text-sm font-semibold text-gray-700">Name</th>
+                    <th className="p-3 text-sm font-semibold text-gray-700">URI</th>
+                    <th className="p-3 text-sm font-semibold text-gray-700">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {profiles.map(p => (
                     <tr key={p.id} className="border-t border-white/10">
                       <td className="p-3">{p.name}</td>
-                      <td className="p-3 font-mono text-xs">{p.uri}</td>
+                      <td className="p-3 font-mono text-xs text-gray-700">{p.uri}</td>
                       <td className="p-3 flex gap-2">
-                        <button className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 hover:bg-white/10" onClick={() => loadProfile(p.id)}>Load</button>
-                        <button className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-red-200 hover:bg-red-500/20" onClick={() => deleteProfile(p.id)}>Delete</button>
+                        <button className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-gray-700 hover:bg-gray-50" onClick={() => loadProfile(p.id)}>Load</button>
+                        <button className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-rose-700 hover:bg-rose-100" onClick={() => deleteProfile(p.id)}>Delete</button>
                       </td>
                     </tr>
                   ))}
@@ -1730,32 +1730,32 @@ export default function ManagementPage() {
             </div>
           </div>
           {/* Saved Queries */}
-          <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-5 space-y-4">
+          <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-4 shadow-sm">
             <h2 className="text-lg font-semibold">Saved Queries</h2>
             {pinnedSaved.length > 0 && (
               <div className="flex flex-wrap gap-2 items-center">
                 {pinnedSaved.map((p) => (
-                  <button key={`${p.db}.${p.collection}.${p.ts}`} className="px-3 py-1.5 rounded-full text-xs bg-white/10 border border-white/15 hover:bg-white/15" onClick={() => applyPin(p)}>
+                  <button key={`${p.db}.${p.collection}.${p.ts}`} className="px-3 py-1.5 rounded-full text-xs bg-gray-100 border border-gray-200 text-gray-700 hover:bg-gray-200/60" onClick={() => applyPin(p)}>
                     {p.name || `${p.db}.${p.collection}`}
                   </button>
                 ))}
-                <button className="ml-auto px-3 py-1.5 rounded-lg text-xs bg-red-500/10 border border-red-400/30 text-red-200 hover:bg-red-500/20" onClick={() => { setPinnedSaved([]); localStorage.removeItem('savedQueryPins'); }}>Clear Pins</button>
+                <button className="ml-auto px-3 py-1.5 rounded-lg text-xs bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100" onClick={() => { setPinnedSaved([]); localStorage.removeItem('savedQueryPins'); }}>Clear Pins</button>
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
-              <input className="md:col-span-2 rounded-xl border border-white/10 bg-white/10 px-3 py-2" placeholder="Name" value={newSaved.name} onChange={(e) => setNewSaved({ name: e.target.value })} />
+              <input className="md:col-span-2 rounded-xl border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500" placeholder="Name" value={newSaved.name} onChange={(e) => setNewSaved({ name: e.target.value })} />
               <div className="md:col-span-2 flex justify-end">
-                <button className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 hover:bg-white/10" onClick={addSaved}>Save Current</button>
+                <button className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50" onClick={addSaved}>Save Current</button>
               </div>
             </div>
-            <div className="overflow-auto rounded-xl border border-white/10">
-              <table className="min-w-full text-sm">
+            <div className="overflow-auto rounded-xl border border-gray-200">
+              <table className="min-w-full text-sm text-gray-800">
                 <thead>
-                  <tr className="bg-white/5 text-left text-slate-300">
-                    <th className="p-3 font-medium">Name</th>
-                    <th className="p-3 font-medium">DB</th>
-                    <th className="p-3 font-medium">Collection</th>
-                    <th className="p-3 font-medium">Actions</th>
+                  <tr className="bg-gray-100 text-left">
+                    <th className="p-3 text-sm font-semibold text-gray-700">Name</th>
+                    <th className="p-3 text-sm font-semibold text-gray-700">DB</th>
+                    <th className="p-3 text-sm font-semibold text-gray-700">Collection</th>
+                    <th className="p-3 text-sm font-semibold text-gray-700">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1765,8 +1765,8 @@ export default function ManagementPage() {
                       <td className="p-3">{s.db}</td>
                       <td className="p-3">{s.collection}</td>
                       <td className="p-3 flex gap-2">
-                        <button className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 hover:bg-white/10" onClick={() => loadSaved(s.id)}>Load</button>
-                        <button className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-red-200 hover:bg-red-500/20" onClick={() => deleteSaved(s.id)}>Delete</button>
+                        <button className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-gray-700 hover:bg-gray-50" onClick={() => loadSaved(s.id)}>Load</button>
+                        <button className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-rose-700 hover:bg-rose-100" onClick={() => deleteSaved(s.id)}>Delete</button>
                       </td>
                     </tr>
                   ))}
@@ -1778,26 +1778,26 @@ export default function ManagementPage() {
         </TabsContent>
 
         <TabsContent value="indexes">
-        <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-5 space-y-4">
+        <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Indexes</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Indexes</h2>
             <Button variant="outline" onClick={refreshIndexes}>Refresh</Button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="md:col-span-2">
-              <label className="mb-2 block text-sm text-slate-300">Keys (JSON)</label>
+              <label className="mb-2 block text-sm font-medium text-gray-700">Keys (JSON)</label>
               <input
-                className="w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
                 placeholder='[["field",1]]'
                 value={idxKeys}
                 onChange={(e) => setIdxKeys(e.target.value)}
               />
-              {idxKeysErr && <div className="mt-1 text-xs text-red-300">{idxKeysErr}</div>}
+              {idxKeysErr && <div className="mt-1 text-xs text-red-600">{idxKeysErr}</div>}
             </div>
             <div>
-              <label className="mb-2 block text-sm text-slate-300">Name (optional)</label>
+              <label className="mb-2 block text-sm font-medium text-gray-700">Name (optional)</label>
               <input
-                className="w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500"
                 placeholder="my_index"
                 value={idxName}
                 onChange={(e) => setIdxName(e.target.value)}
@@ -1805,29 +1805,29 @@ export default function ManagementPage() {
             </div>
             <div className="flex items-center gap-2">
               <input id="unique" type="checkbox" className="size-4" checked={idxUnique} onChange={(e) => setIdxUnique(e.target.checked)} />
-              <label htmlFor="unique" className="text-sm text-slate-300">Unique</label>
+              <label htmlFor="unique" className="text-sm text-gray-700">Unique</label>
             </div>
             <div className="md:col-span-2 flex justify-end">
               <Button onClick={createIdx} disabled={!!idxKeysErr}>Create Index</Button>
             </div>
           </div>
 
-          <div className="overflow-auto rounded-xl border border-white/10">
-            <table className="min-w-full text-sm">
+          <div className="overflow-auto rounded-xl border border-gray-200">
+            <table className="min-w-full text-sm text-gray-800">
               <thead>
-                <tr className="bg-white/5 text-left text-slate-300">
-                  <th className="p-3 font-medium">Name</th>
-                  <th className="p-3 font-medium">Key</th>
-                  <th className="p-3 font-medium">Options</th>
-                  <th className="p-3 font-medium">Actions</th>
+                <tr className="bg-gray-100 text-left">
+                  <th className="p-3 text-sm font-semibold text-gray-700">Name</th>
+                  <th className="p-3 text-sm font-semibold text-gray-700">Key</th>
+                  <th className="p-3 text-sm font-semibold text-gray-700">Options</th>
+                  <th className="p-3 text-sm font-semibold text-gray-700">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {(indexes ?? []).map((idx: any) => (
-                  <tr key={idx.name} className="border-t border-white/10 align-top hover:bg-white/5">
-                    <td className="p-3 whitespace-nowrap">{idx.name}</td>
-                    <td className="p-3 font-mono text-xs">{JSON.stringify(idx.key)}</td>
-                    <td className="p-3 font-mono text-xs">{JSON.stringify({ unique: idx.unique, sparse: idx.sparse })}</td>
+                {(indexes ?? []).map((idx: any, i: number) => (
+                  <tr key={idx.name} className={`border-t border-gray-200 align-top ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                    <td className="p-3 whitespace-nowrap text-gray-900">{idx.name}</td>
+                    <td className="p-3 font-mono text-xs text-gray-800">{JSON.stringify(idx.key)}</td>
+                    <td className="p-3 font-mono text-xs text-gray-800">{JSON.stringify({ unique: idx.unique, sparse: idx.sparse })}</td>
                     <td className="p-3">
                       {idx.name !== "_id_" && (
                         <Button variant="destructive" onClick={() => dropIdx(idx.name)}>Drop</Button>
